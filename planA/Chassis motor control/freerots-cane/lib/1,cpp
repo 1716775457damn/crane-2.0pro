@@ -1,0 +1,91 @@
+#include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "bujin.hpp"
+#include "servo.hpp"
+
+int tracingcontrol = 0;
+int chaosheng = 0;
+float distance;
+float averageDistance;
+int routecontrol = 0;
+int k1;
+int k2;
+int k3;
+int k4;
+int k5;
+int panduan;
+bool daoche1 = false;
+int a;
+int b;
+int c;
+int d;
+int e;
+uint16_t thresholdR1 = 170;
+uint16_t thresholdR2 = 170;
+uint16_t thresholdM = 170;
+uint16_t thresholdL1 = 170;
+uint16_t thresholdL2 = 170;
+
+#define ECHOPIN 24
+#define TRIGPIN 22
+// 定义串口引脚
+const int serialPin = 5; // 根据实际情况修改
+/////////////////////////////////////////////////////////////////////////////定义部分
+// 定义任务句柄
+TaskHandle_t task1Handle, task2Handle;
+// 发送数字，从一开始，每次加三
+void task1(void *pvParameters)
+{
+    int value = 1;
+    while (1)
+    {
+        Serial.print(value);
+        Serial.println();
+        vTaskDelay(pdMS_TO_TICKS(1000)); // 每秒发送一次
+        value += 3;
+    }
+}
+// 发送数字，从二开始，每次加一
+void task2(void *pvParameters)
+{
+    int value = 2;
+    while (1)
+    {
+        Serial.print(value);
+        Serial.println();
+        vTaskDelay(pdMS_TO_TICKS(1000)); // 每秒发送一次
+        value += 1;
+    }
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    pinMode(A8, INPUT);
+    pinMode(A9, INPUT);
+    pinMode(A10, INPUT);
+    pinMode(A11, INPUT);
+    pinMode(A12, INPUT);
+    pinMode(ECHOPIN, INPUT);
+    pinMode(TRIGPIN, OUTPUT);
+    pinMode(servoPin1, OUTPUT);
+    pinMode(PUL1, OUTPUT);   // 设置io口输出
+    pinMode(DIR1, OUTPUT);   // 设置io口输出
+    pinMode(ENA1, OUTPUT);   // 设置io口输出
+    digitalWrite(ENA1, LOW); // LOW表示使能开启，HIGH表示使能关闭
+    pinMode(PUL2, OUTPUT);   // 设置io口输出
+    pinMode(DIR2, OUTPUT);   // 设置io口输出
+    pinMode(ENA2, OUTPUT);   // 设置io口输出
+    digitalWrite(ENA2, LOW); // LOW表示使能开启，HIGH表示使能关闭
+    servo1(105);
+
+    // 创建任务
+    xTaskCreate(task1, "Task1", 10000, NULL, 1, &task1Handle);
+    xTaskCreate(task2, "Task2", 10000, NULL, 1, &task2Handle);
+}
+
+void loop()
+{
+    // 空循环，Arduino框架需要有loop函数
+}
