@@ -1,268 +1,129 @@
 // #include<sensor.h>
 // #include<stepper.h>
 #include<servo.h>
-// #include <StepperControl.h>
 #include "StepperMotor.h"
 // #include<relay.h>
-#include<laser.h>
-void task_0(void *pvParameters);
-void task_1(void *pvParameters);
-void task_101(void *pvParameters);
-void task_102(void *pvParameters);
-void task_103(void *pvParameters);
-void task_104(void *pvParameters);
-void task_301(void *pvParameters);
-void task_302(void *pvParameters);
-void task_first(void *pvParameters);
-void task_second(void *pvParameters);
-void task_fourth(void *pvParameters);
-void task_fifth(void *pvParameters);
-void task_third(void *pvParameters);
+#include<laser.h>  // 添加激光传感器头文件
+#include<web.h>    // 添加Web服务器头文件
+#include<chassis.h>
+#include <Adafruit_NeoPixel.h> // 添加NeoPixel库
+
+
+#define BOARD_LED_PIN 48  // ESP32-S3 开发板的板载 RGB LED 引脚号
+#define NUMPIXELS 1       // 板载 RGB LED 的数量
+
+Adafruit_NeoPixel pixels(NUMPIXELS, BOARD_LED_PIN, NEO_GRB + NEO_KHZ800);
+
+#define COLOR_RED pixels.Color(255, 0, 0)
+#define COLOR_GREEN pixels.Color(0, 255, 0)
+#define COLOR_BLUE pixels.Color(0, 0, 255)
+#define COLOR_OFF pixels.Color(0, 0, 0)
+
 void task_00(void *pvParameters);
-void task_001(void *pvParameters);
-//初始化
-// int a = 0;
-// int e = 0;
-// int amount = 0;
+void task_chassis(void *pvParameters);
+void task_one_line(void *pvParameters);
+void task_four_motors(void *pvParameters); 
+void task_servos(void *pvParameters);      
+void task_laser_test(void *pvParameters);  
+void task_laser_stepper(void *pvParameters); 
+void task_1(void *pvParameters); // 添加task_1函数声明
+
+// 添加task_laser_stepper函数的实现，重定向到task_1
+void task_laser_stepper(void *pvParameters)
+{
+    // 重定向到task_1函数
+    task_1(pvParameters);
+}
 
 void task_00(void *pvParameters)
 {
-    // 初始化步进电机
     initSteppers();
     
-    while (1)
-    {
-        // 启动电机 - 一行代码控制：电机号,速度,步数(正数顺时针，负数逆时针)
-        stepper(1, 100, 1);  // 电机1持续运行(正转)
-        stepper(2, 100, 1);  // 电机2持续运行(正转)
+    chassis_serial_init();
+    
+    // startLaserWebTask();
+    // runAllSteppers(200, 2000, 150, 6000, 200, 2000, 200, -2000); // down
+    // vTaskDelay(1000 / portTICK_PERIOD_MS);
+    send_chassis_command("7,11000,30"); 
+    delay(5000);               
+    servo1(95); // across
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    runAllSteppers(0, 0, 200, 200, 0, 0, 0, -0); // down
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    servo2(100);  // clamp
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-        Serial.println("Both motors are running...");
+    runAllSteppers(0, 0, 200, -600, 0, 0, 0, -0);//up   
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    runAllSteppers(200, 2000, 0, 0, 0, 0, 0, -0); // back
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    runAllSteppers(0, 0, 200, -5400, 0, 0, 0, -0);//back,down       
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    runAllSteppers(200, 2000, 200, 6000, 0, 0, 0, -0);//down
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    servo2(100); // clamp
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-        vTaskDelay(5000 / portTICK_PERIOD_MS); // 让电机持续运行5秒
-
-        // 停止电机
-        stopStepper(1);
-        stopStepper(2);
-
-        Serial.println("Both motors have stopped.");
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // 停止后等待1秒
+    send_chassis_command("8,11000,30");
+    delay(5000);
+    runAllSteppers(200, -2000, 0, 0, 0, 0, 0, -0);//go
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    servo2(0);    // servo2-0
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
         
-        // 电机1正转2秒，电机2反转2秒
-        stepper(1, 100, 200);   // 电机1以速度100顺时针转动2秒
-        stepper(2, 100, -200);  // 电机2以速度100逆时针转动2秒
+    servo3(90);   // servo3-90
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    xTaskCreatePinnedToCore(task_1, "Task_1", 4096, NULL, 1, NULL, 0);
+    vTaskDelete(NULL);
+}
+
+
+void task_1(void *pvParameters)
+{
+    // 初始化激光传感器
+    laser_init();
+    
+    // 初始化RGB LED
+    pixels.begin();
+    pixels.setBrightness(50);  // 设置亮度，范围为 0~255
+    pixels.clear();            // 清除所有像素的颜色
+    pixels.show();             // 更新LED状态
+    
+    // 主循环
+    while(1) {
+        // 获取激光测距数据
+        float distance = jiguang();
         
-        Serial.println("Motors running in opposite directions...");
+        // 只在有效测距值时进行操作
+        if (distance >= 0) {
+            // 根据距离设置不同颜色
+            if (distance < 300) {
+                // 近距离(<30cm)显示红色
+                pixels.setPixelColor(0, COLOR_RED);
+                pixels.show();
+            }
+            else if (distance < 500) {
+                // 中距离(<50cm)显示蓝色
+                pixels.setPixelColor(0, COLOR_BLUE);
+                pixels.show();
+            }
+            else {
+                // 远距离(>=50cm)显示绿色
+                pixels.setPixelColor(0, COLOR_GREEN);
+                pixels.show();
+            }
+        } 
+        else {
+            // 测距失败时LED闪烁一次表示错误
+            pixels.setPixelColor(0, COLOR_RED);
+            pixels.show();
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+            pixels.setPixelColor(0, COLOR_OFF);
+            pixels.show();
+        }
         
-        // 等待电机自动停止(无需手动调用updateSteppers)
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
-        
-        Serial.println("Motors stopped automatically after 2 seconds.");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        // 适当延时
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
-// void task_00(void *pvParameters)
-// {
-//     initSteppers();
-//     enableStepper(1);
-//     setStepperDirection(1, DIRECTION_CW);
-//     setStepperSpeed(1, 100);
-
-//     Serial.begin(115200);
-//     Serial.println("Initializing steppers...");
-
-//     xTaskCreate(task_00, "Task_00", 2000, NULL, 1, &task1Handle);
-    // servo1(105);
-    // // pulseRelay(10, 1000);
-    // delay(1000);
-    // // if (laser_on())
-    // // {
-    // //     Serial.print("1,10,10");
-    // //     delay(30);
-    // stepper(1, 100, 0, true); // 速度降低到 100
-    // enableStepper(1);
-    // delay(1000); // 等待电机稳定
-    // // xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 0);
-    // vTaskDelete(NULL);
-// }
-// void task_001(void *pvParameters)
-// {
-
-//     // e += 1;
-//     // switch (e)
-//     // {
-//     // case 1:
-//     //     xTaskCreatePinnedToCore(task_301, "Task301", 2000, NULL, 1, NULL, 0);//左
-//     //     e += 1;
-//     //     vTaskDelete(NULL);
-//     //     break;
-//     // case 2: 
-//     //     xTaskCreatePinnedToCore(task_302, "Task302", 2000, NULL, 1, NULL, 0);//右
-//     //     e += 1;
-//     //     vTaskDelete(NULL);
-//     //     break;
-//     // case 3:
-//     //     xTaskCreatePinnedToCore(task_102, "Task102", 2000, NULL, 1, NULL, 0);
-//     //     e += 1;
-//     //     vTaskDelete(NULL);
-//     //     break;
-//     // }
-//     //     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 0);
-//     //     vTaskDelete(NULL);
-// }   
-
-// void task_0(void *pvParameters)
-// {
-//     // while (1)
-//     // {
-//     //     chaosheng = measureDistanceAndSetState();
-//     //     if (chaosheng == 1)
-//     //     {
-//     //         b = tracing();
-//     //         if (b = 3)
-//     //         {
-//     //             xTaskCreatePinnedToCore(task_001, "Task001", 2000, NULL, 1, NULL, 0);
-//     //             vTaskDelete(NULL);
-//     //         }
-//     //     }
-//     //     else if (chaosheng == 0) // 假设当value达到10时任务1完成
-//     //     {
-//     //         switch (a)
-//     //         {
-//     //         case 0:
-//     //             Serial.print("0,10,10");
-//     //             delay(30);
-//     //             xTaskCreatePinnedToCore(task_1, "Task1", 2000, NULL, 1, NULL, 0);//勾1.0
-//     //             a += 1;
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         case 1:
-//     //             xTaskCreatePinnedToCore(task_first, "Task_first", 2000, NULL, 1, NULL, 1);//放1.0
-//     //             a += 1;
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         case 2:
-//     //             xTaskCreatePinnedToCore(task_second, "Task_second", 2000, NULL, 1, NULL, 0);//存储2.0
-//     //             a += 1;
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         case 3:
-//     //             xTaskCreatePinnedToCore(task_third, "Task_0", 2000, NULL, 1, NULL, 1);//勾，升3.0
-//     //             a += 1;            
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         case 4:
-//     //             xTaskCreatePinnedToCore(task_fourth, "Task_0", 2000, NULL, 1, NULL, 1);//放2.0
-//     //             a += 1;
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         case 5:
-//     //             xTaskCreatePinnedToCore(task_fifth, "Task_0", 2000, NULL, 1, NULL, 1);//放3.0
-//     //             a += 1;
-//     //             vTaskDelete(NULL);
-//     //             break;
-//     //         default:
-//     //             break;
-//     //         }
-//     //     }
-//     // }
-// }
-// void task_1(void *pvParameters)
-// {
-//     servo1(65);
-//     delay(30);
-//     controlStepper(stepper1, 950, 1800, 3700);
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 0);
-//     vTaskDelete(NULL);
-// }
-
-
-// void task_first(void *pvParameters)
-// {
-//     Serial.print("0,10,10");
-//     delay(30);
-//     controlStepper(stepper1, 2000, 1000, 2000);
-//     servo1(105);
-//     delay(500);
-//     Serial.print("5,8000,8"); // 后退
-//     delay(2300);
-//     Serial.print("8,9200,15"); // 右
-//     delay(4500);
-//     controlStepper(stepper1, 1000, 1000, 0);
-//     // xTaskCreatePinnedToCore(task_101, "Task1", 4000, NULL, 1, NULL, 0);
-//     // xTaskCreatePinnedToCore(task_102, "Task2", 4000, NULL, 1, NULL, 1);
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 0);
-//     vTaskDelete(NULL);
-// }
-// void task_101(void *pvParameters){
-//     controlStepper(stepper1, 950, 2000, 2900); // up
-//     vTaskDelete(NULL);
-// }
-// void task_102(void *pvParameters)
-// {
-//     delay(6000);
-//     controlStepper(stepper2, 2000, 2000, -2600);
-//     vTaskDelete(NULL);
-// }
-// void task_103(void *pvParameters)
-// {
-//     controlStepper(stepper1, 2000, 2000, 0); // down
-//     vTaskDelete(NULL);
-// }
-// void task_104(void *pvParameters)
-// {
-//     controlStepper(stepper2, 2000, 2000, 0);
-//     vTaskDelete(NULL);
-// }
-
-// void task_second(void *pvParameters)
-// {
-//     Serial.print("0,10,10");
-//     delay(30);
-//     servo1(65);
-//     // controlStepper(stepper1, 950, 1800, 2900);//up
-//     // controlStepper(stepper2, 1800, 1800, -2600);
-//     xTaskCreatePinnedToCore(task_101, "Task1", 4000, NULL, 1, NULL, 0);
-//     xTaskCreatePinnedToCore(task_102, "Task2", 4000, NULL, 1, NULL, 1);
-//     controlStepper(stepper1, 1800, 1800, 2000);
-//     servo1(105);
-//     // controlStepper(stepper1, 1800, 1800, 0);//down
-//     // controlStepper(stepper2, 1800, 1800, 0);
-//     xTaskCreatePinnedToCore(task_103, "Task3", 4000, NULL, 1, NULL, 0);
-//     xTaskCreatePinnedToCore(task_104, "Task4", 4000, NULL, 1, NULL, 1);
-
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 0);
-//     vTaskDelete(NULL);
-// }
-// void task_third(void *pvParameters){
-//     Serial.print("0,10,10");
-//     delay(30);
-//     servo1(105);
-//     controlStepper(stepper1, 950, 2000, 6000); // up
-// }
-// void task_301(void *pvParameters)
-// {
-//     Serial.print("7,4600,15");
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 1);
-//     vTaskDelete(NULL);
-// }
-// void task_302(void *pvParameters)
-// {
-//     Serial.print("8,4600,15");
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 1);
-//     vTaskDelete(NULL);
-// }
-// void task_fourth(void *pvParameters){
-//     Serial.print("0,10,10");
-//     delay(30);
-//     controlStepper(stepper1, 2000, 1000, 4700); // down
-//     delay(500);
-//     servo1(105);
-//     xTaskCreatePinnedToCore(task_0, "Task_0", 2000, NULL, 1, NULL, 1);
-//     vTaskDelete(NULL);
-// }
-// void task_fifth(void *pvParameters){
-//     Serial.print("0,10,10");
-//     delay(30000);
-    
-// }

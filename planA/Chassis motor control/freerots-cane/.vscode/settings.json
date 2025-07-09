@@ -70,6 +70,29 @@
     "unordered_set": "cpp",
     "vector": "cpp",
     "string_view": "cpp",
-    "initializer_list": "cpp"
-  }
+    "initializer_list": "cpp",
+    "xstring": "cpp",
+    "xutility": "cpp",
+    "random": "cpp",
+    "cstring": "cpp",
+    "forward_list": "cpp",
+    "list": "cpp",
+    "regex": "cpp",
+    "chrono": "cpp",
+    "xhash": "cpp",
+    "xtree": "cpp",
+    "charconv": "cpp",
+    "xmemory": "cpp",
+    "locale": "cpp",
+    "queue": "cpp",
+    "stack": "cpp",
+    "functional": "cpp",
+    "memory": "cpp",
+    "istream": "cpp",
+    "tuple": "cpp",
+    "utility": "cpp",
+    "bitset": "cpp",
+    "algorithm": "cpp"
+  },
+  "idf.pythonInstallPath": "F:\\Espressif\\tools\\idf-python\\3.11.2\\python.exe"
 }
