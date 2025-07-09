@@ -4,9 +4,9 @@
 #include <Arduino.h>
 
 // 舵机接口引脚定义
-const int servoPin1 = 9;  // 舵机1接口引脚，接橙色信号线
-const int servoPin2 = 12; // 舵机2接口引脚，接橙色信号线
-const int servoPin3 = 21; // 舵机3接口引脚，接橙色信号线
+const int servoPin1 = 8;  // 舵机1接口引脚，接橙色信号线
+const int servoPin2 = 18; // 舵机2接口引脚，接橙色信号线
+const int servoPin3 = 12; // 舵机3接口引脚，接橙色信号线
 
 /**
  * @brief 控制舵机1转动到指定角度

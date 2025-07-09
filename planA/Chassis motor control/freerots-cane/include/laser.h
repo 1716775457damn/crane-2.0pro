@@ -4,8 +4,8 @@
 #include <Arduino.h>
 
 // Laser sensor pin definitions
-#define LASER_RX_PIN 16  // Sensor TXD connects to ESP32S3's RX
-#define LASER_TX_PIN 17  // Sensor RXD connects to ESP32S3's TX
+#define LASER_RX_PIN 9  // Sensor TXD connects to ESP32S3's RX黑线
+#define LASER_TX_PIN 10  // Sensor RXD connects to ESP32S3's TX白线
 #define SENSOR_SERIAL Serial2 // Use Serial2 for consistency
 
 // Error codes

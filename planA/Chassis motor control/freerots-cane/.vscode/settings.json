@@ -92,7 +92,8 @@
     "tuple": "cpp",
     "utility": "cpp",
     "bitset": "cpp",
-    "algorithm": "cpp"
+    "algorithm": "cpp",
+    "limits": "cpp"
   },
   "idf.pythonInstallPath": "F:\\Espressif\\tools\\idf-python\\3.11.2\\python.exe"
 }

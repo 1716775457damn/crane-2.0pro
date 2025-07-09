@@ -41,14 +41,26 @@ void task_00(void *pvParameters)
     
     chassis_serial_init();
     
-    // startLaserWebTask();
-    // runAllSteppers(200, 2000, 150, 6000, 200, 2000, 200, -2000); // down
-    // vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // 初始化激光传感器
+    laser_init();
+    
     send_chassis_command("7,11000,30"); 
     delay(5000);               
     servo1(95); // across
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    runAllSteppers(0, 0, 200, 200, 0, 0, 0, -0); // down
+    
+    // 获取激光测距数据
+    float distance = get_laser_distance();
+    
+    // 根据测距结果决定上升或下降
+    if (distance > 70) {
+        // 距离大于70mm，执行下降操作
+        runAllSteppers(0, 0, 200, 200, 0, 0, 0, -0); // down
+    } else {
+        // 距离小于等于70mm，执行上升操作
+        runAllSteppers(0, 0, 200, -200, 0, 0, 0, -0); // up
+    }
+    
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     servo2(100);  // clamp
     vTaskDelay(1000 / portTICK_PERIOD_MS);
