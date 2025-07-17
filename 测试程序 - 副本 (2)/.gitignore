@@ -1,0 +1,28 @@
+# PlatformIO
+.pio
+.pioenvs
+.piolibdeps
+.vscode
+
+# Build files
+build/
+
+# Compiled binaries
+*.bin
+*.elf
+*.hex
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln.docstates
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*~ 

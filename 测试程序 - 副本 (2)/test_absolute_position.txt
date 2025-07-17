@@ -1,0 +1,59 @@
+# 底盘绝对位置控制测试序列
+# 将以下命令逐个输入串口监视器进行测试
+
+# 1. 查看帮助信息
+help
+
+# 2. 查看初始位置
+chassis_pos
+
+# 3. 基础移动测试
+chassis_abs,10000,0
+chassis_pos
+
+# 4. 向前移动
+chassis_abs,10000,10000
+chassis_pos
+
+# 5. 返回原点
+chassis_abs,0,0
+chassis_pos
+
+# 6. 负坐标测试
+chassis_abs,-10000,0
+chassis_pos
+
+chassis_abs,0,-10000
+chassis_pos
+
+# 7. 位置重置测试
+chassis_reset,50000,50000
+chassis_pos
+
+# 8. 移动到新原点
+chassis_abs,0,0
+chassis_pos
+
+# 9. 重置到真正的原点
+chassis_reset
+chassis_pos
+
+# 10. 正方形路径测试
+chassis_abs,50000,0
+chassis_abs,50000,50000
+chassis_abs,0,50000
+chassis_abs,0,0
+chassis_pos
+
+# 11. 混合使用测试（绝对+相对）
+chassis_abs,100000,100000
+chassis_adv,1,50000,50
+chassis_pos
+
+# 12. 大距离移动测试
+chassis_abs,200000,300000,30
+chassis_pos
+
+# 13. 最终返回原点
+chassis_abs,0,0
+chassis_pos
